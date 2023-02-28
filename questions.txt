@@ -1,0 +1,40 @@
+Truth Table
+Draw a truth table, e.g. A & ~A would be written as "[([0],false),([1],false)]":
+A>>B
+Truth Table
+Draw a truth table, e.g. A & ~A would be written as "[([0],false),([1],false)]":
+A>>(B>>C)
+DNF Form
+Convert to DNF form:
+A>>(B>>C)
+Satisfiability
+Check the satisfiability ("Satisfiable" OR "Unsatisfiable"):
+A>>B
+Satisfiability
+Check the satisfiability ("Satisfiable" OR "Unsatisfiable"):
+A & ~A
+Validity
+Check the validity ("Valid" OR "Invalid"):
+A>>B
+Validity
+Check the validity ("Valid" OR "Invalid"):
+A>>(B>>C)
+Truth Table
+Show truth table
+A & ~A
+DNF Form
+Convert to DNF Form
+(A >> B) & (B << A)
+Satisfiability
+Check the satisfiability ("Satisfiable" OR "Unsatisfiable"):
+A | B
+Validity
+Check the validity ("Valid" OR "Invalid"):
+A | ~A
+DNF Form
+Convert to DNF Form
+A >> B
+Truth Table
+Show Truth table
+A | ~A
+
