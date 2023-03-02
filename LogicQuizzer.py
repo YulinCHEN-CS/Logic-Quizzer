@@ -12,7 +12,12 @@ from sympy.logic.inference import satisfiable, valid
 window_size = "800x600"
 window_width = 800
 window_height = 600
-
+teacher = "Teacher"
+student = "Student"
+append = "APPEND"
+test = "TEST"
+practice = "PRACTICE"
+question_file_name = "questions.txt"
 
 # put the window to the center of screen
 def center_window(window, w, h):
@@ -27,14 +32,19 @@ def center_window(window, w, h):
 class LogicQuizzer:
     def __init__(self, root):
         # Global
+
         self.start_window = root  # window for start window
         self.question_ui = None  # window for question and answer also for appending question
         self.question_type_var = None  # question type been selected
         self.current_user_type = None  # String; store current user type
-        self.user_type_var = None  # tk.Stringvar(); used to store usr typing for their type
-        self.user_types = ["Teacher", "Student"]
-        self.required_type = None  # question type required by user
+        self.user_type_var = None  # tk.StringVar(); used to store usr typing for their type
+        self.user_types = [teacher, student]
 
+        self.question_mode_var = None  # tk.StringVar(), used to store "TEST" or "PRACTICE"
+        self.question_modes = [append, test, practice]
+        self.mode = None
+
+        self.required_type = None  # question type required by user
         # define question type and corresponding solution
         self.question_types = {
             "Truth Table": self.show_truth_table,
@@ -53,6 +63,7 @@ class LogicQuizzer:
         self.current_question = None  # current question tuple([0]: type, [1]: content, [2]: formula)
         self.current_question_index = 0  # current question index
 
+        self.test_result = []
         # Teacher window
         self.submit_label = None  # Question written into file successfully or not
         # self.formula_var = None  # Store formula user typed in
@@ -79,9 +90,16 @@ class LogicQuizzer:
 
         self.question_type_var = tk.StringVar()
         self.question_type_var.set(list(self.question_types.keys())[0])
-
         question_type_menu = tk.OptionMenu(self.start_window, self.question_type_var, *self.question_types.keys())
         question_type_menu.pack()
+
+        select_mode_label = tk.Label(self.start_window, text="Select mode:")
+        select_mode_label.pack()
+
+        self.question_mode_var = tk.StringVar()
+        self.question_mode_var.set(self.question_modes[0])
+        question_mode_menu = tk.OptionMenu(self.start_window, self.question_mode_var, *self.question_modes)
+        question_mode_menu.pack()
 
         # create start button
         start_button = tk.Button(self.start_window, text="Start", command=self.start_quiz)
@@ -91,9 +109,9 @@ class LogicQuizzer:
         quit_button.pack()
 
     # Create the question answer window for students
-    def question_answer(self):
+    def question_practice(self):
         self.question_ui.deiconify()  # show the hidden window
-        self.question_ui.title("Propositional Logic Quizzer")
+        self.question_ui.title("Propositional Logic Quizzer Practice")
         center_window(self.question_ui, window_width, window_height)
         # self.answer_var = tk.StringVar()
 
@@ -114,6 +132,47 @@ class LogicQuizzer:
 
         next_button = tk.Button(self.question_ui, text="Next", command=self.answer_next_question)
         next_button.pack()
+
+    def question_test(self):
+        self.question_ui.deiconify()  # show the hidden window
+        self.question_ui.title("Propositional Logic Quizzer Test")
+        center_window(self.question_ui, window_width, window_height)
+
+        self.question_content_label = tk.Label(self.question_ui, text="")
+        self.question_content_label.pack()
+
+        self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
+        self.answer_entry.pack()
+
+        self.status_label = tk.Label(self.question_ui, text="")
+        self.status_label.pack()
+
+        test_next_button = tk.Button(self.question_ui, text="Next",
+                                     command=lambda: [self.check_answer(), self.answer_next_question()])
+        test_next_button.pack()
+
+    def test_result_window(self):
+        self.question_ui.title("Propositional Logic Quizzer Test Result")
+        center_window(self.question_ui, window_width, window_height)
+
+        result = ""
+        if len(self.test_result) == 0:
+            question_mark_label = tk.Label(self.question_ui, text="all is right")
+            question_mark_label.pack()
+        else:
+            print(len(self.test_result))
+            print(len(self.questions.keys()))
+            rate = (1 - len(self.test_result) / len(self.questions.keys())) * 100
+            question_mark_label = tk.Label(self.question_ui, text="Mark: %.2f\n" % rate)
+            question_mark_label.pack()
+
+            for record in self.test_result:
+                result += "Question No.: {}, Question type: {}\nQuestion content: {}\nYour answer: {}\nCorrect answer: {}\n".format(
+                    record[0], record[1][0], record[1][1] + record[1][2], record[2], record[3])
+            result_label = tk.Label(self.question_ui, text=result)
+            result_label.pack()
+        back_home_button = tk.Button(self.question_ui, text="Back to Home page", command=self.back_home)
+        back_home_button.pack()
 
     # Create the question append window for teachers
     def question_appender(self):
@@ -139,7 +198,7 @@ class LogicQuizzer:
         self.formula_entry.pack()
 
         submit_button = tk.Button(self.question_ui, text="Submit",
-                                  command=lambda: self.write_question("questions.txt"))
+                                  command=lambda: self.write_question(question_file_name))
         submit_button.pack()
 
         self.submit_label = tk.Label(self.question_ui, text="")
@@ -178,8 +237,14 @@ class LogicQuizzer:
     # Back to the start page
     def back_home(self):
         self.current_question_index = 0
+        self.test_result = []
         self.question_ui.destroy()
         self.start_window.deiconify()
+
+    def show_test_result(self):
+        self.question_ui.destroy()
+        self.question_ui = tk.Tk()
+        self.test_result_window()
 
     # read question from the file
     def load_questions(self, filename):
@@ -216,9 +281,29 @@ class LogicQuizzer:
             print(self.current_question)
             self.current_question_index += 1
         else:
-            self.back_home()
-            result = showwarning('Prompt', 'You have completed all the questions, please try other fields.')
-            print(f'prompt: {result}')
+            if self.mode == practice:
+                self.back_home()
+                result = showwarning('Prompt', 'You have completed all the questions, please try other fields.')
+                print(f'prompt: {result}')
+            else:
+                self.show_test_result()
+
+    def switch_mode(self):
+        if self.mode == practice:
+            self.question_practice()
+            self.load_questions(question_file_name)
+            self.answer_next_question()
+        elif self.mode == test:
+            self.question_test()
+            self.load_questions(question_file_name)
+            self.answer_next_question()
+        else:
+            if self.current_user_type == student:
+                self.back_home()
+                invalid = showwarning('Prompt', 'Student can not be teacher mode')
+                print(f'prompt: {invalid}')
+            else:
+                self.question_appender()
 
     # Start our app
     def start_quiz(self):
@@ -226,19 +311,16 @@ class LogicQuizzer:
         self.question_ui = tk.Toplevel()
         self.current_user_type = self.user_type_var.get()
         self.required_type = self.question_type_var.get()
-        if self.current_user_type == "Student":
-            self.question_answer()
-            self.load_questions("questions.txt")
-            self.answer_next_question()
-            print(self.current_question_index)
-            print(self.current_user_type)
-        else:
-            self.question_appender()
+        self.mode = self.question_mode_var.get()
+        self.switch_mode()
+        print(self.current_question_index)
+        print(self.current_user_type)
 
     # Check answer automatically
     def check_answer(self):
         # answer = self.answer_var.get()
         answer = self.answer_entry.get("1.0", "end - 1 chars")
+        answer_copy = answer
         is_dnf_form = True
         current_type = self.current_question[0]
         current_formula = self.current_question[2]
@@ -254,9 +336,14 @@ class LogicQuizzer:
         print(answer.lower())
         print(correct_copy.lower())
         if answer.lower().lower() == correct_copy.lower() and is_dnf_form:
-            self.status_label.config(text="Correct")
+            if self.mode == practice:
+                self.status_label.config(text="Correct")
         else:
-            self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
+            if self.mode == practice:
+                self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
+            else:
+                self.test_result.append([self.current_question_index, self.current_question, answer_copy,
+                                         self.correct_answer])
 
     # Generate Truth table
     def show_truth_table(self, expression):
