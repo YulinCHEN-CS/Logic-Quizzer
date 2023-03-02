@@ -1,6 +1,8 @@
 # Written by Stephen Chen at 2023.02.25
+import random
 import sys
 import tkinter as tk
+from time import sleep
 from tkinter.messagebox import *
 import re as regular  # no idea there seems to have another re.py
 from sympy.parsing.sympy_parser import parse_expr
@@ -18,6 +20,8 @@ append = "APPEND"
 test = "TEST"
 practice = "PRACTICE"
 question_file_name = "questions.txt"
+TIME_EXPECTED_FOR_A_QUESTION = 60
+
 
 # put the window to the center of screen
 def center_window(window, w, h):
@@ -32,7 +36,6 @@ def center_window(window, w, h):
 class LogicQuizzer:
     def __init__(self, root):
         # Global
-
         self.start_window = root  # window for start window
         self.question_ui = None  # window for question and answer also for appending question
         self.question_type_var = None  # question type been selected
@@ -43,6 +46,10 @@ class LogicQuizzer:
         self.question_mode_var = None  # tk.StringVar(), used to store "TEST" or "PRACTICE"
         self.question_modes = [append, test, practice]
         self.mode = None
+
+        self.num_question_var = None
+        self.num_can_be_chosen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        self.num_of_question = 0
 
         self.required_type = None  # question type required by user
         # define question type and corresponding solution
@@ -56,12 +63,13 @@ class LogicQuizzer:
         # Student window
         self.question_content_label = None  # question content
         self.status_label = None  # question "Correct" or not
-        # self.answer_var = None  # String var to store user typing
         self.answer_entry = None  # tk.text to enable multiple lines entry
         self.correct_answer = None  # correct answer
         self.questions = {}  # all the question
         self.current_question = None  # current question tuple([0]: type, [1]: content, [2]: formula)
         self.current_question_index = 0  # current question index
+        self.remaining_time_var = None
+        self.timer = None
 
         self.test_result = []
         # Teacher window
@@ -92,6 +100,14 @@ class LogicQuizzer:
         self.question_type_var.set(list(self.question_types.keys())[0])
         question_type_menu = tk.OptionMenu(self.start_window, self.question_type_var, *self.question_types.keys())
         question_type_menu.pack()
+
+        select_num_label = tk.Label(self.start_window, text="Select number of question:")
+        select_num_label.pack()
+
+        self.num_question_var = tk.StringVar()
+        self.num_question_var.set(self.num_can_be_chosen[0].__str__())
+        question_num_manu = tk.OptionMenu(self.start_window, self.num_question_var, *self.num_can_be_chosen)
+        question_num_manu.pack()
 
         select_mode_label = tk.Label(self.start_window, text="Select mode:")
         select_mode_label.pack()
@@ -143,6 +159,13 @@ class LogicQuizzer:
 
         self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
         self.answer_entry.pack()
+
+        select_time_label = tk.Label(self.question_ui, text="Remaining time:")
+        select_time_label.pack()
+
+        self.remaining_time_var = tk.StringVar()
+        self.timer = tk.Label(self.question_ui, textvariable=self.remaining_time_var)
+        self.timer.pack()
 
         self.status_label = tk.Label(self.question_ui, text="")
         self.status_label.pack()
@@ -272,14 +295,18 @@ class LogicQuizzer:
     def answer_next_question(self):
         self.answer_entry.delete("1.0", "end")
         self.status_label.config(text="")
-        if self.current_question_index < len(self.questions):
-            self.current_question = self.questions.get(self.current_question_index)
+        if self.current_question_index < self.num_of_question:
+            self.current_question = self.questions.get(list(self.questions.keys())[self.current_question_index])
+            self.current_question_index += 1
             print(len(self.questions))
             print("index: ", self.current_question_index)
             print("current Q: ", self.current_question)
-            self.question_content_label.config(text=self.current_question[1] + "\n" + self.current_question[2])
+            self.question_content_label.config(text="Q{}/{}: {}".format(self.current_question_index,
+                                                                        len(self.questions),
+                                                                        self.current_question[1] + "\n" +
+                                                                        self.current_question[2]))
+            self.question_ui.update()
             print(self.current_question)
-            self.current_question_index += 1
         else:
             if self.mode == practice:
                 self.back_home()
@@ -288,22 +315,50 @@ class LogicQuizzer:
             else:
                 self.show_test_result()
 
+    def start_timer(self, time):
+        for i in range(time, 0, -1):
+            if self.current_question_index <= len(self.questions):
+                self.remaining_time_var.set(i.__str__() + " s")
+                self.question_ui.update()
+                sleep(1)
+        while self.current_question_index < len(self.questions):
+            self.answer_next_question()
+        self.show_test_result()
+
+    def prompt_invalid(self, message):
+        self.back_home()
+        invalid = showwarning('Prompt', message)
+        print(f'prompt: {invalid}')
+
+    def shuffle_question(self):
+        shuffled_dict = {}
+        keys = list(self.questions.keys())
+        random.shuffle(keys)
+        for i in range(self.num_of_question):
+            shuffled_dict[keys[i]] = self.questions.get(keys[i])
+        self.questions = shuffled_dict
+        print(self.questions)
+
     def switch_mode(self):
-        if self.mode == practice:
-            self.question_practice()
-            self.load_questions(question_file_name)
-            self.answer_next_question()
-        elif self.mode == test:
-            self.question_test()
-            self.load_questions(question_file_name)
-            self.answer_next_question()
-        else:
+        if self.mode == append:
             if self.current_user_type == student:
-                self.back_home()
-                invalid = showwarning('Prompt', 'Student can not be teacher mode')
-                print(f'prompt: {invalid}')
+                self.prompt_invalid("Student has no access to append question")
             else:
                 self.question_appender()
+        else:
+            self.load_questions(question_file_name)
+            if self.num_of_question > len(self.questions):
+                self.prompt_invalid("No enough question")
+            else:
+                self.shuffle_question()
+                if self.mode == practice:
+                    self.question_practice()
+                    self.answer_next_question()
+                else:
+                    remaining_time = self.num_of_question * TIME_EXPECTED_FOR_A_QUESTION
+                    self.question_test()
+                    self.answer_next_question()
+                    self.start_timer(remaining_time)
 
     # Start our app
     def start_quiz(self):
@@ -312,6 +367,7 @@ class LogicQuizzer:
         self.current_user_type = self.user_type_var.get()
         self.required_type = self.question_type_var.get()
         self.mode = self.question_mode_var.get()
+        self.num_of_question = int(self.num_question_var.get())
         self.switch_mode()
         print(self.current_question_index)
         print(self.current_user_type)
