@@ -10,10 +10,12 @@ import sympy.abc
 import sympy
 from sympy.logic.boolalg import to_dnf, is_dnf
 from sympy.logic.inference import satisfiable, valid
+import re
 
 window_size = "800x600"
-window_width = 800
-window_height = 600
+window_width = 1000
+window_height = 1000
+window_color = "#BBDEFB"
 teacher = "Teacher"
 student = "Student"
 append = "APPEND"
@@ -32,7 +34,20 @@ def center_window(window, w, h):
     y = (hs / 2) - (h / 2)
     window.geometry('%dx%d+%d+%d' % (w, h, x, y))
 
+# Create a new subclass of BlueLabel with the default background color set to blue
+class BlueLabel(tk.Label):
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.configure(bg=window_color, fg = "black")
+        self.configure(font=("Courier New", 25))
 
+class Button(tk.Button):
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.configure(bg=window_color, fg = "black")
+        self.configure(font=("Courier New",18))
+
+        
 class LogicQuizzer:
     def __init__(self, root):
         # Global
@@ -79,122 +94,212 @@ class LogicQuizzer:
         self.formula_entry = None  # Store formula user typed in
         self.content_entry = None  # Store question content user typed in
 
+        self.satisfiability_var = tk.StringVar()
+        self.validity_var = tk.StringVar()
+
     # Create start window
     def start(self):
         self.start_window.title("Propositional Logic Quizzer")
+        self.start_window.configure(bg=window_color)
         center_window(self.start_window, window_width, window_height)
 
-        select_type_label = tk.Label(self.start_window, text="Who are you:")
-        select_type_label.pack()
+        select_type_label = BlueLabel(self.start_window, text="Who are you:")
+        select_type_label.pack(pady=(25,25))
 
         self.user_type_var = tk.StringVar()
         self.user_type_var.set(self.user_types[0])
 
         user_type_manu = tk.OptionMenu(self.start_window, self.user_type_var, *self.user_types)
-        user_type_manu.pack()
+        user_type_manu.pack(pady=(0,25))
+        user_type_manu.config(bg=window_color, fg = "black")
 
-        select_type_label = tk.Label(self.start_window, text="Select question type:")
-        select_type_label.pack()
+        select_type_label = BlueLabel(self.start_window, text="Select question type:")
+        select_type_label.pack(pady=(0,25))
 
         self.question_type_var = tk.StringVar()
         self.question_type_var.set(list(self.question_types.keys())[0])
         question_type_menu = tk.OptionMenu(self.start_window, self.question_type_var, *self.question_types.keys())
-        question_type_menu.pack()
+        question_type_menu.pack(pady=(0,25))
+        question_type_menu.config(bg=window_color, fg = "black")
 
-        select_num_label = tk.Label(self.start_window, text="Select number of question:")
-        select_num_label.pack()
+        select_num_label = BlueLabel(self.start_window, text="Select number of question:")
+        select_num_label.pack(pady=(0,25))
 
         self.num_question_var = tk.StringVar()
         self.num_question_var.set(self.num_can_be_chosen[0].__str__())
         question_num_manu = tk.OptionMenu(self.start_window, self.num_question_var, *self.num_can_be_chosen)
-        question_num_manu.pack()
+        question_num_manu.pack(pady=(0,25))
+        question_num_manu.config(bg=window_color, fg = "black")
+        #question_num_manu["menu"].config(bg=window_color)
 
-        select_mode_label = tk.Label(self.start_window, text="Select mode:")
-        select_mode_label.pack()
+        select_mode_label = BlueLabel(self.start_window, text="Select mode:", bg= window_color)
+        select_mode_label.pack(pady=(0,25))
 
         self.question_mode_var = tk.StringVar()
         self.question_mode_var.set(self.question_modes[0])
         question_mode_menu = tk.OptionMenu(self.start_window, self.question_mode_var, *self.question_modes)
-        question_mode_menu.pack()
+        question_mode_menu.pack(pady=(0,25))
+        question_mode_menu.config(bg=window_color, fg = "black")
 
         # create start button
-        start_button = tk.Button(self.start_window, text="Start", command=self.start_quiz)
-        start_button.pack()
+        start_button = Button (self.start_window, text="Start", command=self.start_quiz)
+        start_button.pack(pady=(0,25))
 
-        quit_button = tk.Button(self.start_window, text="Quit", command=sys.exit)
-        quit_button.pack()
+        quit_button = Button (self.start_window,text="Quit", command=sys.exit)
+        quit_button.pack(pady=(0,25))
 
     # Create the question answer window for students
     def question_practice(self):
         self.question_ui.deiconify()  # show the hidden window
         self.question_ui.title("Propositional Logic Quizzer Practice")
+        self.question_ui.configure(bg=window_color)
         center_window(self.question_ui, window_width, window_height)
-        # self.answer_var = tk.StringVar()
 
-        self.question_content_label = tk.Label(self.question_ui, text="")
+        self.question_content_label = BlueLabel(self.question_ui, text="", bg=window_color)
         self.question_content_label.pack()
 
-        # answer_entry = tk.Entry(self.question_ui, textvariable=self.answer_var)
-        # answer_entry.pack()
+        if self.required_type == "Satisfiability": #creates two buttons for satisfiability
+            satisfiable_button = tk.Radiobutton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
+            unsatisfiable_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
 
-        self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
-        self.answer_entry.pack()
+        elif self.required_type == "Validity": #creates two buttons for validity
+            valid_button = tk.Radiobutton(self.question_ui, text="Valid", font = font, variable=self.validity_var, value="val").pack()
+            invalid_button = tk.Radiobutton(self.question_ui, text="Invalid", font = font, variable=self.validity_var, value="inval").pack()
 
-        submit_button = tk.Button(self.question_ui, text="Submit", command=self.check_answer)
-        submit_button.pack()
+        else:
+            self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
+            self.answer_entry.pack()
+            self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
+            self.add_connectives()
 
-        self.status_label = tk.Label(self.question_ui, text="")
+        submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
+        submit_button.pack(pady=(25,25))
+
+        self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
 
-        next_button = tk.Button(self.question_ui, text="Next", command=self.answer_next_question)
-        next_button.pack()
+        next_button = Button (self.question_ui, text="Next", command=self.answer_next_question)
+        next_button.pack(pady=(0,25))
 
     def question_test(self):
         self.question_ui.deiconify()  # show the hidden window
         self.question_ui.title("Propositional Logic Quizzer Test")
+        self.question_ui.configure(bg=window_color)
         center_window(self.question_ui, window_width, window_height)
 
-        self.question_content_label = tk.Label(self.question_ui, text="")
+        self.question_content_label = BlueLabel(self.question_ui, text="", bg=window_color)
         self.question_content_label.pack()
 
-        self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
-        self.answer_entry.pack()
+        if self.required_type == "Satisfiability": #creates two buttons for satisfiability
+            self.satisfiable_button = tk.Radiobutton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
+            self.unsatisfiable_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
 
-        select_time_label = tk.Label(self.question_ui, text="Remaining time:")
+        elif self.required_type == "Validity": #creates two buttons for validity
+            self.valid_button = tk.Radiobutton(self.question_ui, text="Valid", variable=self.validity_var, value="val").pack()
+            self.invalid_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.validity_var, value="inval").pack()
+
+        else:
+            self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
+            self.answer_entry.pack()
+            self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
+            self.add_connectives()
+
+        select_time_label = BlueLabel(self.question_ui, text="Remaining time:")
         select_time_label.pack()
 
         self.remaining_time_var = tk.StringVar()
-        self.timer = tk.Label(self.question_ui, textvariable=self.remaining_time_var)
+        self.timer = BlueLabel(self.question_ui, textvariable=self.remaining_time_var)
         self.timer.pack()
 
-        self.status_label = tk.Label(self.question_ui, text="")
+        self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
 
-        test_next_button = tk.Button(self.question_ui, text="Next",
+        test_next_button = Button (self.question_ui, text="Next",
                                      command=lambda: [self.check_answer(), self.answer_next_question()])
         test_next_button.pack()
+
+    def set_content_focus(self, event):
+        self.content_focused = True
+        self.formula_focused = False
+        self.answer_focused = False
+
+    def set_formula_focus(self, event):
+        self.content_focused = False
+        self.formula_focused = True
+        self.answer_focused = False
+
+    def answer_entry_focus(self, event):
+        self.content_focused = False
+        self.formula_focused = False
+        self.answer_focused = True
+
+    def add_connectives(self): #create buttons for user to easily access connectives
+
+        def add_imply():
+            if self.answer_focused == True:
+                self.answer_entry.insert(tk.END, " -> ")
+            elif self.formula_focused == True:
+                self.formula_entry.insert(tk.END, " -> ")
+            else:
+                self.content_entry.insert(tk.END, " -> ")
+
+        def add_or():
+            if self.answer_focused == True:
+                self.answer_entry.insert(tk.END, " \/ ")
+            elif self.formula_focused == True:
+                self.formula_entry.insert(tk.END, " \/ ")
+            else:
+                self.content_entry.insert(tk.END, " \/ ")
+        def add_and():
+            if self.answer_focused == True:
+                self.answer_entry.insert(tk.END, " /\\ ")
+            elif self.formula_focused == True:
+                self.formula_entry.insert(tk.END, " /\\ ")
+            else:
+                self.content_entry.insert(tk.END, " /\\ ")
+        def add_not():
+            if self.answer_focused == True:
+                self.answer_entry.insert(tk.END, " ~ ")
+            elif self.formula_focused == True:
+                self.formula_entry.insert(tk.END, " ~ ")
+            else:
+                self.content_entry.insert(tk.END, " ~ ")
+        # def add_iff():
+        #     if self.answer_focused == True:
+        #         self.answer_entry.insert(tk.END, " <=> ")
+        #     elif self.formula_focused == True:
+        #         self.formula_entry.insert(tk.END, " <=> ")
+        #     else:
+        #         self.content_entry.insert(tk.END, " <=> ")
+    
+        self.imply_button = Button (self.question_ui, text="-->", command=add_imply).pack()
+        self.or_button = Button (self.question_ui, text="\/", command=add_or).pack()
+        self.and_button = Button (self.question_ui, text="/\\", command=add_and).pack()
+        self.not_button = Button (self.question_ui, text="~", command=add_not).pack()
+        # self.iff_button = Button (self.question_ui, text="<==>", command=add_iff).pack()
 
     def test_result_window(self):
         self.question_ui.title("Propositional Logic Quizzer Test Result")
         center_window(self.question_ui, window_width, window_height)
+        self.question_ui.configure(bg=window_color)
 
         result = ""
         if len(self.test_result) == 0:
-            question_mark_label = tk.Label(self.question_ui, text="all is right")
+            question_mark_label = BlueLabel(self.question_ui, text="all is right")
             question_mark_label.pack()
         else:
             print(len(self.test_result))
             print(len(self.questions.keys()))
             rate = (1 - len(self.test_result) / len(self.questions.keys())) * 100
-            question_mark_label = tk.Label(self.question_ui, text="Mark: %.2f\n" % rate)
+            question_mark_label = BlueLabel(self.question_ui, text="Mark: %.2f\n" % rate)
             question_mark_label.pack()
 
             for record in self.test_result:
                 result += "Question No.: {}, Question type: {}\nQuestion content: {}\nYour answer: {}\nCorrect answer: {}\n".format(
                     record[0], record[1][0], record[1][1] + record[1][2], record[2], record[3])
-            result_label = tk.Label(self.question_ui, text=result)
+            result_label = BlueLabel(self.question_ui, text=result)
             result_label.pack()
-        back_home_button = tk.Button(self.question_ui, text="Back to Home page", command=self.back_home)
+        back_home_button = Button (self.question_ui, text="Back to Home page",command=self.back_home)
         back_home_button.pack()
 
     # Create the question append window for teachers
@@ -202,16 +307,18 @@ class LogicQuizzer:
         self.question_ui.deiconify()
         self.question_ui.title("Propositional Logic Quizzer")
         center_window(self.question_ui, window_width, window_height)
+        self.question_ui.configure(bg=window_color)
         # self.question_var = tk.StringVar()
         # self.formula_var = tk.StringVar()
 
-        question_content_prompt = tk.Label(self.question_ui, text="Enter question content: ")
+        question_content_prompt = BlueLabel(self.question_ui, text="Enter question content: ")
         question_content_prompt.pack()
 
         self.content_entry = tk.Text(self.question_ui, width=30, height=10, font=("Helvetica", 16))
         self.content_entry.pack()
+        self.content_entry.bind("<FocusIn>", self.set_content_focus)
 
-        question_formula_prompt = tk.Label(self.question_ui, text="Enter question formula: ")
+        question_formula_prompt = BlueLabel(self.question_ui, text="Enter question formula: ")
         question_formula_prompt.pack()
 
         # formula_entry = tk.Entry(self.question_ui, textvariable=self.formula_var)
@@ -219,18 +326,21 @@ class LogicQuizzer:
 
         self.formula_entry = tk.Text(self.question_ui, width=30, height=5, font=("Helvetica", 16))
         self.formula_entry.pack()
+        self.formula_entry.bind("<FocusIn>", self.set_formula_focus)
 
-        submit_button = tk.Button(self.question_ui, text="Submit",
+        self.add_connectives()
+
+        submit_button = Button (self.question_ui, text="Submit",
                                   command=lambda: self.write_question(question_file_name))
         submit_button.pack()
 
-        self.submit_label = tk.Label(self.question_ui, text="")
+        self.submit_label = BlueLabel(self.question_ui, text="")
         self.submit_label.pack()
 
-        next_button = tk.Button(self.question_ui, text="Next", command=self.append_next_question)
+        next_button = Button (self.question_ui, text="Next", command=self.append_next_question)
         next_button.pack()
 
-        back_home_button = tk.Button(self.question_ui, text="Back to Home page", command=self.back_home)
+        back_home_button = Button (self.question_ui, text="Back to Home page", command=self.back_home)
         back_home_button.pack()
 
     # Append question into file
@@ -293,7 +403,8 @@ class LogicQuizzer:
 
     # Renew question answer window
     def answer_next_question(self):
-        self.answer_entry.delete("1.0", "end")
+        if self.required_type == "DNF Form" or self.required_type == "Truth Table":
+            self.answer_entry.delete("1.0", "end")
         self.status_label.config(text="")
         if self.current_question_index < self.num_of_question:
             self.current_question = self.questions.get(list(self.questions.keys())[self.current_question_index])
@@ -374,8 +485,25 @@ class LogicQuizzer:
 
     # Check answer automatically
     def check_answer(self):
-        # answer = self.answer_var.get()
-        answer = self.answer_entry.get("1.0", "end - 1 chars")
+        if self.required_type == "Satisfiability":
+            if self.satisfiability_var.get() == "sat":
+                answer = "satisfiable"
+            elif self.satisfiability_var.get() == "unsat":
+                answer = "unsatisfiable"
+            else:
+                answer = "You must choose either one"
+        elif self.required_type == "Validity":
+            if self.validity_var.get() == "val":
+                answer = "valid"
+            elif self.validity_var.get() == "inval":
+                answer = "invalid"
+            else:
+                answer = " "
+                print("You must choose either one")
+        else:
+            answer = self.answer_entry.get("1.0", "end - 1 chars")
+            answer.replace("\/", "|").replace("/\\", "&").replace("->", ">>")
+
         answer_copy = answer
         is_dnf_form = True
         current_type = self.current_question[0]
@@ -383,8 +511,11 @@ class LogicQuizzer:
         solution = self.question_types[current_type]
 
         if current_type == "DNF Form" and answer != "":  # Special case if user did not enter simplest dnf
-            is_dnf_form = is_dnf(answer)
-            answer = to_dnf(answer, True).__str__()
+            if self.is_logical_expression(answer) == True:
+                is_dnf_form = is_dnf(answer)
+                answer = to_dnf(answer, True).__str__()
+            else:
+                self.prompt_invalid("Please enter a valid logical expression")
         answer = ''.join(answer.split())
 
         solution(current_formula)
@@ -401,12 +532,30 @@ class LogicQuizzer:
                 self.test_result.append([self.current_question_index, self.current_question, answer_copy,
                                          self.correct_answer])
 
+    def is_logical_expression(self, expression):
+        # allowed symbols
+        allowed_symbols = r">>\|&~"
+
+        # check if string starts and ends with a letter
+        if not expression[0].isalpha() or not expression[-1].isalpha():
+            return False
+
+        # check if two letters are directly next to each other
+        if re.search(r"[A-Za-z]{2}", expression):
+            return False
+
+        # check if the string contains only allowed characters
+        pattern = r"^[A-Za-z{}()]+$".format(allowed_symbols)
+        if not re.match(pattern, expression):
+            return False
+
     # Generate Truth table
     def show_truth_table(self, expression):
         self.correct_answer = ""
         propositions = regular.split(r'[^A-Za-z]', expression)  # remove connectives
         propositions = [item for item in propositions if item != '']  # remove empty propositions
         propositions = list(set(propositions))  # remove repeated propositions
+        print(propositions)
         truth_table = sympy.logic.boolalg.truth_table(expression, propositions)
         for item in truth_table:
             self.correct_answer += "{0} -> {1}\n".format(*item)
