@@ -40,12 +40,20 @@ class BlueLabel(tk.Label):
         super().__init__(master, **kwargs)
         self.configure(bg=window_color, fg = "black")
         self.configure(font=("Courier New", 25))
+        self.pack(pady=(50,0))
 
 class Button(tk.Button):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(bg=window_color, fg = "black")
         self.configure(font=("Courier New",18))
+
+class radioButton(tk.Radiobutton):
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.configure(bg=window_color, fg = "black")
+        self.configure(font=("Courier New",25))
+        self.pack(pady=(50,0))
 
         
 class LogicQuizzer:
@@ -104,49 +112,49 @@ class LogicQuizzer:
         center_window(self.start_window, window_width, window_height)
 
         select_type_label = BlueLabel(self.start_window, text="Who are you:")
-        select_type_label.pack(pady=(25,25))
+        select_type_label.pack()
 
         self.user_type_var = tk.StringVar()
         self.user_type_var.set(self.user_types[0])
 
         user_type_manu = tk.OptionMenu(self.start_window, self.user_type_var, *self.user_types)
-        user_type_manu.pack(pady=(0,25))
+        user_type_manu.pack(pady=(25,0))
         user_type_manu.config(bg=window_color, fg = "black")
 
         select_type_label = BlueLabel(self.start_window, text="Select question type:")
-        select_type_label.pack(pady=(0,25))
+        select_type_label.pack()
 
         self.question_type_var = tk.StringVar()
         self.question_type_var.set(list(self.question_types.keys())[0])
         question_type_menu = tk.OptionMenu(self.start_window, self.question_type_var, *self.question_types.keys())
-        question_type_menu.pack(pady=(0,25))
+        question_type_menu.pack(pady=(25,0))
         question_type_menu.config(bg=window_color, fg = "black")
 
         select_num_label = BlueLabel(self.start_window, text="Select number of question:")
-        select_num_label.pack(pady=(0,25))
+        select_num_label.pack()
 
         self.num_question_var = tk.StringVar()
         self.num_question_var.set(self.num_can_be_chosen[0].__str__())
         question_num_manu = tk.OptionMenu(self.start_window, self.num_question_var, *self.num_can_be_chosen)
-        question_num_manu.pack(pady=(0,25))
+        question_num_manu.pack(pady=(25,0))
         question_num_manu.config(bg=window_color, fg = "black")
         #question_num_manu["menu"].config(bg=window_color)
 
         select_mode_label = BlueLabel(self.start_window, text="Select mode:", bg= window_color)
-        select_mode_label.pack(pady=(0,25))
+        select_mode_label.pack()
 
         self.question_mode_var = tk.StringVar()
         self.question_mode_var.set(self.question_modes[0])
         question_mode_menu = tk.OptionMenu(self.start_window, self.question_mode_var, *self.question_modes)
-        question_mode_menu.pack(pady=(0,25))
+        question_mode_menu.pack(pady=(25,0))
         question_mode_menu.config(bg=window_color, fg = "black")
 
         # create start button
         start_button = Button (self.start_window, text="Start", command=self.start_quiz)
-        start_button.pack(pady=(0,25))
+        start_button.pack()
 
         quit_button = Button (self.start_window,text="Quit", command=sys.exit)
-        quit_button.pack(pady=(0,25))
+        quit_button.pack()
 
     # Create the question answer window for students
     def question_practice(self):
@@ -159,12 +167,12 @@ class LogicQuizzer:
         self.question_content_label.pack()
 
         if self.required_type == "Satisfiability": #creates two buttons for satisfiability
-            satisfiable_button = tk.Radiobutton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
-            unsatisfiable_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
+            satisfiable_button = radioButton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
+            unsatisfiable_button = radioButton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
 
         elif self.required_type == "Validity": #creates two buttons for validity
-            valid_button = tk.Radiobutton(self.question_ui, text="Valid", font = font, variable=self.validity_var, value="val").pack()
-            invalid_button = tk.Radiobutton(self.question_ui, text="Invalid", font = font, variable=self.validity_var, value="inval").pack()
+            valid_button = radioButton(self.question_ui, text="Valid", variable=self.validity_var, value="val").pack()
+            invalid_button = radioButton(self.question_ui, text="Invalid", variable=self.validity_var, value="inval").pack()
 
         else:
             self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
@@ -173,13 +181,13 @@ class LogicQuizzer:
             self.add_connectives()
 
         submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
-        submit_button.pack(pady=(25,25))
+        submit_button.pack()
 
         self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
 
         next_button = Button (self.question_ui, text="Next", command=self.answer_next_question)
-        next_button.pack(pady=(0,25))
+        next_button.pack()
 
     def question_test(self):
         self.question_ui.deiconify()  # show the hidden window
@@ -191,12 +199,12 @@ class LogicQuizzer:
         self.question_content_label.pack()
 
         if self.required_type == "Satisfiability": #creates two buttons for satisfiability
-            self.satisfiable_button = tk.Radiobutton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
-            self.unsatisfiable_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
+            self.satisfiable_button = radioButton(self.question_ui, text="Satisfiable", variable=self.satisfiability_var, value="sat").pack()
+            self.unsatisfiable_button = radioButton(self.question_ui, text="Unsatisfiable", variable=self.satisfiability_var, value="unsat").pack()
 
         elif self.required_type == "Validity": #creates two buttons for validity
-            self.valid_button = tk.Radiobutton(self.question_ui, text="Valid", variable=self.validity_var, value="val").pack()
-            self.invalid_button = tk.Radiobutton(self.question_ui, text="Unsatisfiable", variable=self.validity_var, value="inval").pack()
+            self.valid_button = radioButton(self.question_ui, text="Valid", variable=self.validity_var, value="val").pack()
+            self.invalid_button = radioButton(self.question_ui, text="Unsatisfiable", variable=self.validity_var, value="inval").pack()
 
         else:
             self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
@@ -285,7 +293,7 @@ class LogicQuizzer:
 
         result = ""
         if len(self.test_result) == 0:
-            question_mark_label = BlueLabel(self.question_ui, text="all is right")
+            question_mark_label = BlueLabel(self.question_ui, text="You answered all the questions correctly! Well done!")
             question_mark_label.pack()
         else:
             print(len(self.test_result))
