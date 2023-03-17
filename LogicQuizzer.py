@@ -332,8 +332,8 @@ class LogicQuizzer:
             question_mark_label.pack()
 
             for record in self.test_result:
-                result += "Question No.: {}, Question type: {}\nQuestion content: {}\nYour answer: {}\nCorrect answer: {}\n".format(
-                    record[0], record[1][0], record[1][1] + record[1][2], record[2], record[3])
+                result += "Question No. {}, \nQuestion content: {}\nYour answer: \n{}Correct answer: \n{}\n".format(
+                    record[0], record[1][1] + " " + record[1][2], record[2], record[3])
             result_label = BlueLabel(self.question_ui, text=result, font=("Courier New",15))
             result_label.pack()
         back_home_button = Button (self.question_ui, text="Back to Home page",command=self.back_home)
@@ -560,7 +560,7 @@ class LogicQuizzer:
                 answer = to_dnf(answer, True).__str__()
             else:
                 print(answer)
-                self.check_logical_expression(answer)
+                self.check_logical_expression()
         answer = ''.join(answer.split())
         solution(current_formula)
         correct_copy = ''.join(self.correct_answer.split())
@@ -574,8 +574,11 @@ class LogicQuizzer:
                 if current_type != "Truth Table":
                     self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
                 else:
-                    self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.generate_table(current_formula), font=("Courier New", 20))
+                    self.correct_answer = self.generate_table(current_formula)
+                    self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer, font=("Courier New", 20))
             else:
+                if current_type == "Truth Table":
+                    self.correct_answer = self.generate_table(current_formula)
                 self.test_result.append([self.current_question_index, self.current_question, answer_copy,
                                          self.correct_answer])
 
@@ -689,6 +692,10 @@ class LogicQuizzer:
 
 # main
 if __name__ == "__main__":
+    root = tk.Tk()
+    app = LogicQuizzer(root)
+    app.start()
+    root.mainloop()
     root = tk.Tk()
     app = LogicQuizzer(root)
     app.start()
