@@ -106,6 +106,9 @@ class LogicQuizzer:
         self.satisfiability_var = tk.StringVar()
         self.validity_var = tk.StringVar()
 
+        self.invalid_input=None
+
+
     # Create start window
     def start(self):
         self.start_window.title("Propositional Logic Quizzer")
@@ -194,11 +197,18 @@ class LogicQuizzer:
         next_button = Button (self.question_ui, text="Next", command=self.answer_next_question)
         next_button.pack()
 
-    def check_dnf(self):
-        if self.is_logical_expression(self.answer_entry.get("1.0", "end - 1 chars")):
+    def check_dnf(self): #checks if the user input is a logical expression before checking answer
+        expression = self.answer_entry.get("1.0", "end - 1 chars")
+        if self.is_logical_expression(expression):
             self.check_answer()
+            if self.invalid_input is not None:
+                self.invalid_input.destroy()  # remove the label if it exists
         else:
-            self.invalid_input = BlueLabel(self.question_ui, text="Please enter a valid logical expression and re-submit")
+            if self.invalid_input is None:
+                self.invalid_input = BlueLabel(self.question_ui, text="Please enter a valid logical expression and re-submit")
+            else:
+                self.invalid_input.config(text="Please enter a valid logical expression")
+
 
     def question_test(self):
         self.question_ui.deiconify()  # show the hidden window
@@ -233,9 +243,10 @@ class LogicQuizzer:
         self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
 
-        test_next_button = Button (self.question_ui, text="Next",
-                                     command=lambda: [self.check_answer(), self.answer_next_question()])
-        test_next_button.pack()
+        if self.current_question_index != self.num_of_question:
+            test_next_button = Button (self.question_ui, text="Next",
+                                            command=lambda: [self.check_answer(), self.answer_next_question()])
+            test_next_button.pack(padx = (0,25), side="right")
 
     def set_content_focus(self, event):
         self.content_focused = True
@@ -353,6 +364,9 @@ class LogicQuizzer:
                                   command=lambda: self.write_question(question_file_name))
         submit_button.pack()
 
+        self.submit_label = BlueLabel(self.question_ui, text="")
+        self.submit_label.pack(pady=(0,10))
+
         next_button = Button (self.question_ui, text="Next", command=self.append_next_question)
         next_button.pack()
 
@@ -361,20 +375,23 @@ class LogicQuizzer:
 
     # Append question into file
     def write_question(self, filename):
-        question_tuple = [self.required_type, self.content_entry.get("1.0", "end - 1 chars"),
-                          self.formula_entry.get("1.0", "end - 1 chars")]
+        formula = self.formula_entry.get("1.0", "end - 1 chars")
+        formula = formula.replace("\\/", "|").replace("/\\", "&").replace("->", ">>").replace(" ", "")
+        question_tuple = [self.required_type, self.content_entry.get("1.0", "end - 1 chars"), formula]
         contain_empty = False
         for item in question_tuple:
             if item == "":
                 contain_empty = True
         print(question_tuple)
-        if not contain_empty:
+        if contain_empty:
+            self.submit_label.config(text="Please enter both fields")
+        elif self.is_logical_expression(formula) == False:
+            self.submit_label.config(text="Please enter a valid expression")
+        else:
             with open(filename, "a") as f:
                 for items in question_tuple:
                     f.write(items + '\n')
             self.submit_label.config(text="Success")
-        else:
-            self.submit_label.config(text="Wops! Something went wrong")
 
     # Renew question append window
     def append_next_question(self):
@@ -422,6 +439,9 @@ class LogicQuizzer:
         if self.required_type == "DNF Form" or self.required_type == "Truth Table":
             self.answer_entry.delete("1.0", "end")
         self.status_label.config(text="")
+        if self.invalid_input is not None:
+            self.invalid_input.destroy()
+            self.invalid_input = None
         if self.current_question_index < self.num_of_question:
             self.current_question = self.questions.get(list(self.questions.keys())[self.current_question_index])
             self.current_question_index += 1
@@ -441,6 +461,7 @@ class LogicQuizzer:
                 print(f'prompt: {result}')
             else:
                 self.show_test_result()
+            
 
     def start_timer(self, time):
         for i in range(time, 0, -1):
@@ -518,6 +539,7 @@ class LogicQuizzer:
                 print("You must choose either one")
         else:
             answer = self.answer_entry.get("1.0", "end - 1 chars")
+            answer = answer.replace("\\/", "|").replace("/\\", "&").replace("->", ">>").replace(" ", "")
 
         answer_copy = answer
         is_dnf_form = True
@@ -533,7 +555,6 @@ class LogicQuizzer:
                 print(answer)
                 self.prompt_invalid("Please enter a valid logical expression")
         answer = ''.join(answer.split())
-
         solution(current_formula)
         correct_copy = ''.join(self.correct_answer.split())
         print(answer.lower())
