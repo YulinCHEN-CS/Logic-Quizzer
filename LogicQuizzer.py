@@ -47,6 +47,7 @@ class Button(tk.Button):
         super().__init__(master, **kwargs)
         self.configure(bg=window_color, fg = "black")
         self.configure(font=("Courier New",18))
+        self.pack(pady=(15,0))
 
 class radioButton(tk.Radiobutton):
     def __init__(self, master=None, **kwargs):
@@ -180,14 +181,24 @@ class LogicQuizzer:
             self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
             self.add_connectives()
 
-        submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
-        submit_button.pack()
+        if self.required_type != "DNF Form":
+            submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
+            submit_button.pack()
+        else:
+            submit_button = Button (self.question_ui, text="Submit", command=self.check_dnf)
+            submit_button.pack()
 
         self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
 
         next_button = Button (self.question_ui, text="Next", command=self.answer_next_question)
         next_button.pack()
+
+    def check_dnf(self):
+        if self.is_logical_expression(self.answer_entry.get("1.0", "end - 1 chars")):
+            self.check_answer()
+        else:
+            self.invalid_input = BlueLabel(self.question_ui, text="Please enter a valid logical expression and re-submit")
 
     def question_test(self):
         self.question_ui.deiconify()  # show the hidden window
@@ -341,9 +352,6 @@ class LogicQuizzer:
         submit_button = Button (self.question_ui, text="Submit",
                                   command=lambda: self.write_question(question_file_name))
         submit_button.pack()
-
-        self.submit_label = BlueLabel(self.question_ui, text="")
-        self.submit_label.pack()
 
         next_button = Button (self.question_ui, text="Next", command=self.append_next_question)
         next_button.pack()
@@ -510,7 +518,6 @@ class LogicQuizzer:
                 print("You must choose either one")
         else:
             answer = self.answer_entry.get("1.0", "end - 1 chars")
-            answer.replace("\/", "|").replace("/\\", "&").replace("->", ">>")
 
         answer_copy = answer
         is_dnf_form = True
@@ -523,6 +530,7 @@ class LogicQuizzer:
                 is_dnf_form = is_dnf(answer)
                 answer = to_dnf(answer, True).__str__()
             else:
+                print(answer)
                 self.prompt_invalid("Please enter a valid logical expression")
         answer = ''.join(answer.split())
 
@@ -541,8 +549,9 @@ class LogicQuizzer:
                                          self.correct_answer])
 
     def is_logical_expression(self, expression):
+        expression = expression.replace("\\/", "|").replace("/\\", "&").replace("->", ">>").replace(" ", "")
         # allowed symbols
-        allowed_symbols = r">>\|&~"
+        allowed_symbols = r">>|&~|\\|/"
 
         # check if string starts and ends with a letter
         if not expression[0].isalpha() or not expression[-1].isalpha():
@@ -553,9 +562,12 @@ class LogicQuizzer:
             return False
 
         # check if the string contains only allowed characters
-        pattern = r"^[A-Za-z{}()]+$".format(allowed_symbols)
+        pattern = r"^[A-Za-z{}()]+(?<!>)$".format(allowed_symbols)
         if not re.match(pattern, expression):
             return False
+        
+        return True
+
 
     # Generate Truth table
     def show_truth_table(self, expression):
@@ -589,7 +601,6 @@ class LogicQuizzer:
             self.correct_answer = "Valid"
         else:
             self.correct_answer = "Invalid"
-
 
 # main
 if __name__ == "__main__":
