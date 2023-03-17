@@ -1,4 +1,5 @@
 # Written by Stephen Chen at 2023.02.25
+# Edited by Christy on 2023.03.16
 import random
 import sys
 import tkinter as tk
@@ -162,6 +163,7 @@ class LogicQuizzer:
 
     # Create the question answer window for students
     def question_practice(self):
+            
         self.question_ui.deiconify()  # show the hidden window
         self.question_ui.title("Propositional Logic Quizzer Practice")
         self.question_ui.configure(bg=window_color)
@@ -178,18 +180,22 @@ class LogicQuizzer:
             valid_button = radioButton(self.question_ui, text="Valid", variable=self.validity_var, value="val").pack()
             invalid_button = radioButton(self.question_ui, text="Invalid", variable=self.validity_var, value="inval").pack()
 
+        # elif self.required_type == "Truth Table":
+        #     self.generate_truth_table()
+
         else:
             self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
             self.answer_entry.pack()
-            self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
-            self.add_connectives()
+            if self.required_type == "DNF Form":
+                self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
+                self.add_connectives()
 
         if self.required_type != "DNF Form":
-            submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
-            submit_button.pack()
+                submit_button = Button (self.question_ui, text="Submit", command=self.check_answer)
+                submit_button.pack()
         else:
-            submit_button = Button (self.question_ui, text="Submit", command=self.check_dnf)
-            submit_button.pack()
+                self.submit_button = Button (self.question_ui, text="Submit", command=self.check_logical_expression)
+                self.submit_button.pack()
 
         self.status_label = BlueLabel(self.question_ui, text="")
         self.status_label.pack()
@@ -197,7 +203,7 @@ class LogicQuizzer:
         next_button = Button (self.question_ui, text="Next", command=self.answer_next_question)
         next_button.pack()
 
-    def check_dnf(self): #checks if the user input is a logical expression before checking answer
+    def check_logical_expression(self): #checks if the user input is a logical expression before checking answer
         expression = self.answer_entry.get("1.0", "end - 1 chars")
         if self.is_logical_expression(expression):
             self.check_answer()
@@ -230,8 +236,9 @@ class LogicQuizzer:
         else:
             self.answer_entry = tk.Text(self.question_ui, width=30, height=12, font=("Helvetica", 16))
             self.answer_entry.pack()
-            self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
-            self.add_connectives()
+            if self.required_type == "DNF Form":
+                self.answer_entry.bind("<FocusIn>", self.answer_entry_focus)
+                self.add_connectives()
 
         select_time_label = BlueLabel(self.question_ui, text="Remaining time:")
         select_time_label.pack()
@@ -321,13 +328,13 @@ class LogicQuizzer:
             print(len(self.test_result))
             print(len(self.questions.keys()))
             rate = (1 - len(self.test_result) / len(self.questions.keys())) * 100
-            question_mark_label = BlueLabel(self.question_ui, text="Mark: %.2f\n" % rate)
+            question_mark_label = BlueLabel(self.question_ui, text="Mark: %.2f\n" % rate, font=("Courier New",25))
             question_mark_label.pack()
 
             for record in self.test_result:
                 result += "Question No.: {}, Question type: {}\nQuestion content: {}\nYour answer: {}\nCorrect answer: {}\n".format(
                     record[0], record[1][0], record[1][1] + record[1][2], record[2], record[3])
-            result_label = BlueLabel(self.question_ui, text=result)
+            result_label = BlueLabel(self.question_ui, text=result, font=("Courier New",15))
             result_label.pack()
         back_home_button = Button (self.question_ui, text="Back to Home page",command=self.back_home)
         back_home_button.pack()
@@ -451,7 +458,7 @@ class LogicQuizzer:
             self.question_content_label.config(text="Q{}/{}: {}".format(self.current_question_index,
                                                                         len(self.questions),
                                                                         self.current_question[1] + "\n" +
-                                                                        self.current_question[2]))
+                                                                        self.current_question[2]).replace("|", "\\/").replace("&", "/\\").replace(">>", "->"))
             self.question_ui.update()
             print(self.current_question)
         else:
@@ -553,7 +560,7 @@ class LogicQuizzer:
                 answer = to_dnf(answer, True).__str__()
             else:
                 print(answer)
-                self.prompt_invalid("Please enter a valid logical expression")
+                self.check_logical_expression(answer)
         answer = ''.join(answer.split())
         solution(current_formula)
         correct_copy = ''.join(self.correct_answer.split())
@@ -564,7 +571,10 @@ class LogicQuizzer:
                 self.status_label.config(text="Correct")
         else:
             if self.mode == practice:
-                self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
+                if current_type != "Truth Table":
+                    self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
+                else:
+                    self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.generate_table(current_formula), font=("Courier New", 20))
             else:
                 self.test_result.append([self.current_question_index, self.current_question, answer_copy,
                                          self.correct_answer])
@@ -589,20 +599,74 @@ class LogicQuizzer:
         
         return True
 
-
     # Generate Truth table
     def show_truth_table(self, expression):
         self.correct_answer = ""
-        propositions = regular.split(r'[^A-Za-z]', expression)  # remove connectives
-        propositions = [item for item in propositions if item != '']  # remove empty propositions
-        propositions = list(set(propositions))  # remove repeated propositions
-        print(propositions)
-        truth_table = sympy.logic.boolalg.truth_table(expression, propositions)
+        self.propositions = regular.split(r'[^A-Za-z]', expression)  # remove connectives
+        self.propositions = [item for item in self.propositions if item != '']  # remove empty propositions
+        self.propositions = list(set(self.propositions))  # remove repeated propositions
+        print(self.propositions)
+        truth_table = sympy.logic.boolalg.truth_table(expression, self.propositions)
+        self.truth_table_values1 = []
+        self.truth_table_values2 = []
+
         for item in truth_table:
             self.correct_answer += "{0} -> {1}\n".format(*item)
-        print(self.correct_answer)
+            self.truth_table_values1.append(item[1]) #final column values
+            self.truth_table_values2.append(item[0]) #values for each row
+        #convert to strings for table generation
+        self.truth_table_values1 = [str(x)for x in self.truth_table_values1] 
+        self.truth_table_values1 = ["1" if x == "True" else "0" for x in self.truth_table_values1]
+        self.truth_table_values2 = [[str(x) for x in inner_list] for inner_list in self.truth_table_values2]
 
-    # Generate Dnf expression
+        print(self.correct_answer)
+        print(self.truth_table_values1)
+        print(self.truth_table_values2)
+        print("b")
+
+    def generate_table(self, expression):
+        # Calculate the number of rows and columns
+        num_rows = 2 ** len(self.propositions)
+        num_cols = len(self.propositions) + 1
+        expression = expression.replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
+        
+        # Create a list to hold the header labels
+        header_labels = []
+        for i in self.propositions:
+            header_labels.append(i)
+        header_labels.append(expression)
+        
+        # Create a list of lists to hold the table cells
+        table_cells = []
+        for i in range(num_rows):
+            row_cells = []
+            for j in range(num_cols):
+                cell_text = ""
+                if i == 0:
+                    # This is a header cell, so use the header labels
+                    cell_text = header_labels[j]
+                else:
+                    if j == num_cols - 1:
+                        cell_text = self.truth_table_values1[i-1]
+                    else:
+                            cell_text =  self.truth_table_values2[i-1][j]
+                row_cells.append(cell_text)
+            table_cells.append(row_cells)
+        
+        # Print the table as ASCII art
+        table_str = ""
+        col_width = max(len(label) for label in header_labels)
+        for i in range(num_rows):
+            row_str = "|"
+            for j in range(num_cols):
+                row_str += " " + table_cells[i][j].ljust(col_width) + " |"
+            table_str += row_str + "\n"
+            if i == 0:
+                table_str += "-" * len(row_str) + "\n"
+        
+        return table_str
+
+        # Generate Dnf expression
     def convert_to_dnf(self, expression):
         dnf_expr = to_dnf(expression, True)
         self.correct_answer = dnf_expr.__str__()
