@@ -657,8 +657,10 @@ class LogicQuizzer:
     def show_truth_table(self, expression):
         self.correct_answer = ""
         self.propositions = regular.split(r'[^A-Za-z]', expression)  # remove connectives
-        self.propositions = [item for item in self.propositions if item != '']  # remove empty propositions
         self.propositions = list(set(self.propositions))  # remove repeated propositions
+        if '' in self.propositions:
+            self.propositions.remove('')
+        self.propositions.sort()
         print(self.propositions)
         truth_table = sympy.logic.boolalg.truth_table(expression, self.propositions)
         self.truth_table_values1 = []
