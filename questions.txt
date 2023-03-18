@@ -37,4 +37,6 @@ A >> B
 Truth Table
 Show Truth table
 A | ~A
-
+Truth Table
+Show Truth table
+A

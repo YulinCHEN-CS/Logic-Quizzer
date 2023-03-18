@@ -2,8 +2,10 @@
 # Edited by Christy on 2023.03.16
 import random
 import sys
+import tkinter
 import tkinter as tk
 from time import sleep
+from tkinter import VERTICAL
 from tkinter.messagebox import *
 import re as regular 
 from sympy.parsing.sympy_parser import parse_expr
@@ -13,9 +15,7 @@ from sympy.logic.boolalg import to_dnf, is_dnf
 from sympy.logic.inference import satisfiable, valid
 import re
 
-window_size = "800x600"
-window_width = 600
-window_height = 800
+
 window_color = "#BBDEFB"
 teacher = "Teacher"
 student = "Student"
@@ -61,7 +61,7 @@ class radioButton(tk.Radiobutton):
 class LogicQuizzer:
     def __init__(self, root):
         # Global
-        self.start_window = root  # window for start window
+        self.start_window = root  # window for start
         self.question_ui = None  # window for question and answer also for appending question
         self.question_type_var = None  # question type been selected
         self.current_user_type = None  # String; store current user type
@@ -116,6 +116,7 @@ class LogicQuizzer:
         self.start_window.title("Propositional Logic Quizzer")
         self.start_window.configure(bg=window_color)
         center_window(self.start_window, window_width, window_height)
+
 
         select_type_label = BlueLabel(self.start_window, text="Who are you:")
         select_type_label.pack()
@@ -668,9 +669,11 @@ class LogicQuizzer:
             self.truth_table_values1.append(item[1]) #final column values
             self.truth_table_values2.append(item[0]) #values for each row
         #convert to strings for table generation
-        self.truth_table_values1 = [str(x)for x in self.truth_table_values1] 
-        self.truth_table_values1 = ["1" if x == "True" else "0" for x in self.truth_table_values1]
         self.truth_table_values2 = [[str(x) for x in inner_list] for inner_list in self.truth_table_values2]
+        self.truth_table_values1 = [str(x) for x in self.truth_table_values1]
+        if self.truth_table_values1[0] == 'True' or self.truth_table_values1[0] == 'False':
+            self.truth_table_values1 = ["1" if x is "True" else "0" for x in self.truth_table_values1]
+
 
 
     def generate_table(self, expression):
@@ -760,25 +763,25 @@ class LogicQuizzer:
         return table_str
 
         # Generate Dnf expression
-    def convert_to_dnf(self, expression):
-        dnf_expr = to_dnf(expression, True)
-        self.correct_answer = dnf_expr.__str__()
-
-    # Check the satisfiability
-    def check_satisfiability(self, expression):
-        sympy_expr = parse_expr(expression)
-        if satisfiable(sympy_expr):
-            self.correct_answer = "Satisfiable"
-        else:
-            self.correct_answer = "Unsatisfiable"
-
-    # Check the validity
-    def check_validity(self, expression):
-        sympy_expr = parse_expr(expression)
-        if valid(sympy_expr):
-            self.correct_answer = "Valid"
-        else:
-            self.correct_answer = "Invalid"
+    # def convert_to_dnf(self, expression):
+    #     dnf_expr = to_dnf(expression, True)
+    #     self.correct_answer = dnf_expr.__str__()
+    #
+    # # Check the satisfiability
+    # def check_satisfiability(self, expression):
+    #     sympy_expr = parse_expr(expression)
+    #     if satisfiable(sympy_expr):
+    #         self.correct_answer = "Satisfiable"
+    #     else:
+    #         self.correct_answer = "Unsatisfiable"
+    #
+    # # Check the validity
+    # def check_validity(self, expression):
+    #     sympy_expr = parse_expr(expression)
+    #     if valid(sympy_expr):
+    #         self.correct_answer = "Valid"
+    #     else:
+    #         self.correct_answer = "Invalid"
 
         # Generate Dnf expression
     def convert_to_dnf(self, expression):
@@ -804,10 +807,9 @@ class LogicQuizzer:
 # main
 if __name__ == "__main__":
     root = tk.Tk()
-    app = LogicQuizzer(root)
-    app.start()
-    root.mainloop()
-    root = tk.Tk()
+    window_width = 800
+    window_height = 800
+    window_size = "{}x{}".format(window_width, window_height)
     app = LogicQuizzer(root)
     app.start()
     root.mainloop()
