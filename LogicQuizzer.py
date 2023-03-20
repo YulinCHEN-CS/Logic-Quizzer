@@ -628,11 +628,13 @@ class LogicQuizzer:
         else:  # truth table entry
             answer = list(str(self.table_answer.get().replace(",", "").replace(" ", "")))
 
-        answer_copy = answer
+        answer_copy = answer.replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
         is_dnf_form = True
         current_type = self.current_question[0]
         current_formula = self.current_question[2]
         solution = self.question_types[current_type]
+        question_copy = self.current_question
+        question_copy[2] = self.current_question[2].replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
 
         if current_type == "DNF Form" and answer != "":  # Special case if user did not enter simplest dnf
             if self.is_logical_expression(answer):
@@ -673,7 +675,7 @@ class LogicQuizzer:
             if self.mode == practice:
                 self.status_label.config(text="Incorrect\n" + "Suggested answer: \n" + self.correct_answer)
             else:
-                self.test_result.append([self.current_question_index, self.current_question, answer_copy,
+                self.test_result.append([self.current_question_index, question_copy, answer_copy,
                                          self.correct_answer])
 
     def is_logical_expression(self, expression):
