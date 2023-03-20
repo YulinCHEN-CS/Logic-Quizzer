@@ -22,7 +22,10 @@ append = "APPEND"
 test = "TEST"
 practice = "PRACTICE"
 question_file_name = "questions.txt"
-TIME_EXPECTED_FOR_A_QUESTION = 60
+TIME_EXPECTED_FOR_TRUTH_TABLE = 60
+TIME_EXPECTED_FOR_DNF_FORM = 90
+TIME_EXPECTED_FOR_SATISFIABILITY = 100
+
 
 
 # put the window to the center of screen
@@ -580,7 +583,12 @@ class LogicQuizzer:
                     self.question_practice()
                     self.answer_next_question()
                 else:
-                    remaining_time = self.num_of_question * TIME_EXPECTED_FOR_A_QUESTION
+                    if self.required_type == "Truth Table":
+                        remaining_time = self.num_of_question * TIME_EXPECTED_FOR_TRUTH_TABLE
+                    elif self.required_type == "DNF Form":
+                        remaining_time = self.num_of_question * TIME_EXPECTED_FOR_DNF_FORM
+                    else:
+                        remaining_time = self.num_of_question * TIME_EXPECTED_FOR_SATISFIABILITY
                     self.question_test()
                     self.answer_next_question()
                     self.start_timer(remaining_time)
@@ -627,9 +635,9 @@ class LogicQuizzer:
         solution = self.question_types[current_type]
 
         if current_type == "DNF Form" and answer != "":  # Special case if user did not enter simplest dnf
-            if self.is_logical_expression(answer) == True:
+            if self.is_logical_expression(answer):
                 is_dnf_form = is_dnf(answer)
-                answer = to_dnf(answer, True).__str__()
+                answer = to_dnf(answer, True).__str__().replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
             elif current_type != "Truth Table":
                 print(answer)
                 self.check_logical_expression()
@@ -669,6 +677,8 @@ class LogicQuizzer:
                                          self.correct_answer])
 
     def is_logical_expression(self, expression):
+        if expression == "":
+            return False
         expression = expression.replace("\\/", "|").replace("/\\", "&").replace("->", ">>").replace(" ", "")
         # allowed symbols
         allowed_symbols = r">>|&~|\\|/"
@@ -821,7 +831,8 @@ class LogicQuizzer:
     # Generate Dnf expression
     def convert_to_dnf(self, expression):
         dnf_expr = to_dnf(expression, True)
-        self.correct_answer = dnf_expr.__str__()
+        self.correct_answer = dnf_expr.__str__().replace("|", "\\/").replace("&", "/\\").replace(">>", "->")\
+                                                                                        .replace(" ", "")
 
     # Check the satisfiability
     def check_satisfiability(self, expression):
