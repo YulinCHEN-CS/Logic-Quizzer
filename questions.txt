@@ -24,7 +24,7 @@ Show truth table
 A & ~A
 DNF Form
 Convert to DNF Form
-(A >> B) & (B << A)
+(A >> B) & (B >> A)
 Satisfiability
 Check the satisfiability ("Satisfiable" OR "Unsatisfiable"):
 A | B
@@ -40,3 +40,6 @@ A | ~A
 Truth Table
 Show Truth table
 A
+Truth Table
+Show truth table of formula below
+A|B

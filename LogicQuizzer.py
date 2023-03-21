@@ -27,7 +27,6 @@ TIME_EXPECTED_FOR_DNF_FORM = 90
 TIME_EXPECTED_FOR_SATISFIABILITY = 100
 
 
-
 # put the window to the center of screen
 def center_window(window, w, h):
     ws = root.winfo_screenwidth()
@@ -277,7 +276,7 @@ class LogicQuizzer:
             valid_button = radioButton(self.question_ui, text="Valid", variable=self.validity_var,
                                        value="val")
             valid_button.pack()
-            invalid_button = radioButton(self.question_ui, text="Unsatisfiable", variable=self.validity_var,
+            invalid_button = radioButton(self.question_ui, text="Invalid", variable=self.validity_var,
                                          value="inval")
             invalid_button.pack()
 
@@ -367,7 +366,7 @@ class LogicQuizzer:
         #     else:
         #         self.content_entry.insert(tk.END, " <=> ")
 
-        imply_button = Button(self.question_ui, text="-->", command=add_imply)
+        imply_button = Button(self.question_ui, text="->", command=add_imply)
         imply_button.pack()
         or_button = Button(self.question_ui, text="\/", command=add_or)
         or_button.pack()
@@ -455,7 +454,7 @@ class LogicQuizzer:
         print(question_tuple)
         if contain_empty:
             self.submit_label.config(text="Please enter both fields")
-        elif self.is_logical_expression(formula) == False:
+        elif not self.is_logical_expression(formula):
             self.submit_label.config(text="Please enter a valid expression")
         else:
             with open(filename, "a") as f:
@@ -531,7 +530,8 @@ class LogicQuizzer:
             self.question_ui.update()
             print(self.current_question)
             if self.required_type == "Truth Table":
-                self.table_entry.config(text="{}".format(self.empty_table(self.current_question[2])), compound="top")
+                self.table_entry.config(text="{}".format(self.empty_table(self.current_question[2].replace("\\/", "|")
+                                                        .replace("/\\", "&").replace("->", ">>"))), compound="top")
         else:
             self.current_question_index += 1
             if self.mode == practice:
@@ -542,16 +542,16 @@ class LogicQuizzer:
                 self.show_test_result()
 
     def start_timer(self, time):
-        for i in range(time, 0, -1):
-            if self.current_question_index <= len(self.questions):
-                self.remaining_time_var.set(i.__str__() + " s")
-                self.question_ui.update()
-                sleep(1)
-            else:
-                while self.current_question_index <= len(self.questions):
-                    self.check_answer()
-                    self.answer_next_question()
-                break
+        if self.current_question_index > len(self.questions):
+            return
+
+        if time > 0:
+            self.remaining_time_var.set(str(time) + " s")
+            self.question_ui.update()
+            self.question_ui.after(1000, self.start_timer, time - 1)
+        else:
+            self.check_answer()
+            self.answer_next_question()
 
     def prompt_invalid(self, message):
         self.back_home()
@@ -613,7 +613,8 @@ class LogicQuizzer:
             elif self.satisfiability_var.get() == "unsat":
                 answer = "unsatisfiable"
             else:
-                answer = "You must choose either one"
+                answer = " "
+            answer_copy = answer
         elif self.required_type == "Validity":
             if self.validity_var.get() == "val":
                 answer = "valid"
@@ -622,13 +623,16 @@ class LogicQuizzer:
             else:
                 answer = " "
                 print("You must choose either one")
+            answer_copy = answer
         elif self.required_type == "DNF Form":
             answer = self.answer_entry.get("1.0", "end - 1 chars")
+            answer_copy = answer
             answer = answer.replace("\\/", "|").replace("/\\", "&").replace("->", ">>").replace(" ", "")
         else:  # truth table entry
             answer = list(str(self.table_answer.get().replace(",", "").replace(" ", "")))
+            answer_copy = answer
 
-        answer_copy = answer.replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
+        # answer_copy = answer.replace("|", "\\/").replace("&", "/\\").replace(">>", "->")
         is_dnf_form = True
         current_type = self.current_question[0]
         current_formula = self.current_question[2]
@@ -833,8 +837,8 @@ class LogicQuizzer:
     # Generate Dnf expression
     def convert_to_dnf(self, expression):
         dnf_expr = to_dnf(expression, True)
-        self.correct_answer = dnf_expr.__str__().replace("|", "\\/").replace("&", "/\\").replace(">>", "->")\
-                                                                                        .replace(" ", "")
+        self.correct_answer = dnf_expr.__str__().replace("|", "\\/").replace("&", "/\\").replace(">>", "->") \
+            .replace(" ", "")
 
     # Check the satisfiability
     def check_satisfiability(self, expression):
