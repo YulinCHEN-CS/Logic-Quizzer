@@ -6,7 +6,7 @@ import tkinter
 import tkinter as tk
 from time import sleep
 from tkinter import VERTICAL
-from tkinter.messagebox import *
+from tkinter import *
 import re as regular
 from sympy.parsing.sympy_parser import parse_expr
 import sympy.abc
@@ -381,25 +381,45 @@ class LogicQuizzer:
         center_window(self.question_ui, window_width, window_height)
         self.question_ui.configure(bg=window_color)
 
+        # create frame and canvas for scrollbar
+        frame = tk.Frame(self.question_ui, background=window_color)
+        frame.pack(fill=BOTH, expand=1)
+        canvas = tk.Canvas(frame, background=window_color)
+        canvas.pack(side=LEFT, fill=BOTH, expand=1)
+        content_frame = tk.Frame(canvas, background=window_color)
+        content_frame.pack(fill=BOTH, expand=1)
+
         result = ""
         if len(self.test_result) == 0:
-            question_mark_label = BlueLabel(self.question_ui,
+            question_mark_label = BlueLabel(content_frame,
                                             text="You answered all the questions correctly! Well done!")
             question_mark_label.pack()
         else:
-            print(len(self.test_result))
-            print(len(self.questions.keys()))
             rate = (1 - len(self.test_result) / len(self.questions.keys())) * 100
-            question_mark_label = BlueLabel(self.question_ui, text="Mark: %.2f\n" % rate, font=("Courier New", 25))
+            question_mark_label = BlueLabel(content_frame, text="Mark: %.2f\n" % rate, font=("Courier New", 25))
             question_mark_label.pack()
 
             for record in self.test_result:
                 result += "Question No. {} \nQuestion content: {}\nYour answer: \n {}\nCorrect answer:\n{}\n".format(
                     record[0], record[1][1] + " " + record[1][2], record[2], record[3])
-            result_label = BlueLabel(self.question_ui, text=result, font=("Courier New", 15))
+            result_label = BlueLabel(content_frame, text=result, font=("Courier New", 15))
             result_label.pack()
-        back_home_button = Button(self.question_ui, text="Back to Home page", command=self.back_home)
-        back_home_button.pack()
+
+        back_home_button = Button(content_frame, text="Back to Home page", command=self.back_home)
+        back_home_button.pack(pady=(25,25))
+
+        # create scrollbar
+        scrollbar = tk.Scrollbar(frame, orient=VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        # configure canvas and scrollbar
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.create_window((0, 0), window=content_frame, anchor='nw')
+        content_frame.update_idletasks()  # update the content_frame's size
+        canvas.configure(scrollregion=canvas.bbox("all"))
+        canvas_width = canvas.winfo_width()
+        content_width = content_frame.winfo_width()
+        x_offset = max((canvas_width - content_width) // 2, 0)
+        canvas.create_window((x_offset, 0), window=content_frame, anchor='nw')
 
     # Create the question append window for teachers
     def question_appender(self):
