@@ -14,6 +14,7 @@ import sympy
 from sympy.logic.boolalg import to_dnf, is_dnf
 from sympy.logic.inference import satisfiable, valid
 import re
+from tkinter.messagebox import *
 
 window_color = "#BBDEFB"
 teacher = "Teacher"

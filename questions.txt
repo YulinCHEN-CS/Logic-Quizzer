@@ -34,14 +34,9 @@ A | ~A
 DNF Form
 Convert to DNF Form
 A >> B
-
 Truth Table
 show truth table
 A
-
-Truth Table
-revw
-a>>b
 DNF Form
 convert
 a>>b
@@ -54,3 +49,6 @@ a>>b
 DNF Form
 convert to dnf
 a|b
+Truth Table
+show truth table
+A|B
